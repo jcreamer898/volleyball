@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TSMS Volleyball Fundraiser</title>
+    <style>
+      :root {
+        --highlight: rgba(255, 200, 0, 0.55);
+        --highlight-stroke: #ff8a00;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f5f5f5;
+        padding: 16px;
+      }
+      h1 {
+        text-align: center;
+        margin: 8px 0 16px;
+        font-size: 18px;
+        color: #333;
+      }
+      .stage {
+        position: relative;
+        max-width: 1320px;
+        margin: 0 auto;
+        line-height: 0;
+      }
+      .stage img {
+        width: 100%;
+        height: auto;
+        display: block;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+      .stage svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .hotspot {
+        fill: transparent;
+        stroke: transparent;
+        stroke-width: 2;
+        cursor: pointer;
+        transition:
+          fill 0.12s ease,
+          stroke 0.12s ease;
+      }
+      .hotspot:hover,
+      .hotspot:focus {
+        fill: var(--highlight);
+        stroke: var(--highlight-stroke);
+        outline: none;
+      }
+      .hint {
+        text-align: center;
+        color: #666;
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      .other-form {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+      .other-form.open {
+        display: flex;
+      }
+      .other-form .card {
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        max-width: 320px;
+        width: 100%;
+      }
+      .other-form input {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        margin: 8px 0 12px;
+      }
+      .other-form button {
+        padding: 10px 16px;
+        font-size: 16px;
+        cursor: pointer;
+        border: 0;
+        border-radius: 4px;
+      }
+      .other-form .pay {
+        background: #3d95ce;
+        color: white;
+      }
+      .other-form .cancel {
+        background: #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>TSMS Volleyball Fundraiser — tap a square to pay via Venmo</h1>
+
+    <div class="stage" id="stage">
+      <img src="assets/volleyball.jpg" alt="Volleyball fundraiser board" />
+      <svg id="overlay" viewBox="0 0 1320 709" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+
+    <p class="hint">On mobile the Venmo app will open automatically. On desktop you'll be sent to venmo.com.</p>
+
+    <div class="other-form" id="otherForm">
+      <div class="card">
+        <label for="otherAmt"><strong>Other amount ($):</strong></label>
+        <input id="otherAmt" type="number" min="1" step="1" placeholder="e.g. 50" />
+        <button class="pay" id="otherPay">Pay with Venmo</button>
+        <button class="cancel" id="otherCancel">Cancel</button>
+      </div>
+    </div>
+
+    <script>
+      const VENMO_USER = "jcreamer898";
+      const NOTE = "TSMS Volleyball Fundraiser";
+
+      const venmoUrl = (amount) =>
+        `https://venmo.com/${VENMO_USER}?txn=pay&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(NOTE)}`;
+
+      // Hotspots use the natural image coordinate system (1320 x 709)
+      // Table cells: { amount, x, y, w, h }
+      // Volleyball segments: { amount, points: "x,y x,y ..." }
+      const tableCells = [
+        // Row 1 (y ~388-456). Cells 3,4,5 are inside the ball -> skipped here
+        { amount: 10, x: 58,  y: 388, w: 92,  h: 68 },
+        { amount: 5,  x: 150, y: 388, w: 84,  h: 68 },
+        { amount: 5,  x: 583, y: 388, w: 80,  h: 68 },
+        { amount: 15, x: 663, y: 388, w: 100, h: 68 },
+        { amount: 10, x: 763, y: 388, w: 107, h: 68 },
+        { amount: 10, x: 870, y: 388, w: 100, h: 68 },
+        { amount: 5,  x: 970, y: 388, w: 105, h: 68 },
+        { amount: 5,  x: 1075,y: 388, w: 102, h: 68 },
+        { amount: 25, x: 1177,y: 388, w: 113, h: 68 },
+
+        // Row 2 (y ~456-525). Cells 3,4 are ball
+        { amount: 10, x: 58,  y: 456, w: 92,  h: 69 },
+        { amount: 5,  x: 150, y: 456, w: 84,  h: 69 },
+        { amount: 15, x: 583, y: 456, w: 80,  h: 69 },
+        { amount: 15, x: 663, y: 456, w: 100, h: 69 },
+        { amount: 10, x: 763, y: 456, w: 107, h: 69 },
+        { amount: 10, x: 870, y: 456, w: 100, h: 69 },
+        { amount: 5,  x: 970, y: 456, w: 105, h: 69 },
+        { amount: 5,  x: 1075,y: 456, w: 102, h: 69 },
+        { amount: 5,  x: 1177,y: 456, w: 113, h: 69 },
+
+        // Row 3 (y ~525-595)
+        { amount: 10, x: 58,  y: 525, w: 92,  h: 70 },
+        { amount: 5,  x: 150, y: 525, w: 84,  h: 70 },
+        { amount: 5,  x: 234, y: 525, w: 70,  h: 70 },
+        { amount: 10, x: 503, y: 525, w: 80,  h: 70 },
+        { amount: 15, x: 583, y: 525, w: 80,  h: 70 },
+        { amount: 15, x: 663, y: 525, w: 100, h: 70 },
+        { amount: 10, x: 763, y: 525, w: 107, h: 70 },
+        { amount: 10, x: 870, y: 525, w: 100, h: 70 },
+        { amount: 5,  x: 970, y: 525, w: 105, h: 70 },
+        { amount: 5,  x: 1075,y: 525, w: 102, h: 70 },
+        { amount: 5,  x: 1177,y: 525, w: 113, h: 70 },
+
+        // Row 4 (y ~595-665)
+        { amount: 10, x: 58,  y: 595, w: 92,  h: 70 },
+        { amount: 5,  x: 150, y: 595, w: 84,  h: 70 },
+        { amount: 5,  x: 234, y: 595, w: 105, h: 70 },
+        { amount: 10, x: 339, y: 595, w: 110, h: 70 },
+        { amount: 10, x: 449, y: 595, w: 110, h: 70 },
+        { amount: 25, x: 559, y: 595, w: 104, h: 70 },
+        { amount: 15, x: 663, y: 595, w: 100, h: 70 },
+        { amount: 10, x: 763, y: 595, w: 107, h: 70 },
+        { amount: 10, x: 870, y: 595, w: 100, h: 70 },
+        { amount: 5,  x: 970, y: 595, w: 105, h: 70 },
+        { amount: 5,  x: 1075,y: 595, w: 102, h: 70 },
+        { amount: 5,  x: 1177,y: 595, w: 113, h: 70 },
+      ];
+
+      // Volleyball segments (approximate polygons covering each labeled wedge)
+      const ballSegments = [
+        { amount: 5,  points: "120,260 220,250 230,310 200,360 130,340" },     // $5 left
+        { amount: 20, points: "260,200 380,180 410,250 330,280 260,260" },     // $20 top-left
+        { amount: 20, points: "410,200 500,210 520,270 440,290 410,250" },     // $20 top-mid
+        { amount: 20, points: "500,220 590,260 580,330 510,320 500,270" },     // $20 top-right
+        { amount: 25, points: "210,340 320,330 330,400 240,420 210,380" },     // $25 mid-left
+        { amount: 25, points: "260,420 360,410 380,470 310,490 260,460" },     // $25 lower-left
+        { amount: 20, points: "400,340 510,330 530,400 430,420 400,380" },     // $20 mid-right
+        { amount: 20, points: "350,510 460,500 470,560 380,570 350,540" },     // $20 bottom
+        // "Other Amount" center
+        { amount: "other", points: "330,440 460,440 470,500 340,500" },
+      ];
+
+      const overlay = document.getElementById("overlay");
+      const SVG_NS = "http://www.w3.org/2000/svg";
+
+      function makeRect(cell) {
+        const r = document.createElementNS(SVG_NS, "rect");
+        r.setAttribute("x", cell.x);
+        r.setAttribute("y", cell.y);
+        r.setAttribute("width", cell.w);
+        r.setAttribute("height", cell.h);
+        return r;
+      }
+
+      function makePoly(seg) {
+        const p = document.createElementNS(SVG_NS, "polygon");
+        p.setAttribute("points", seg.points);
+        return p;
+      }
+
+      function attachClick(el, amount) {
+        el.classList.add("hotspot");
+        el.setAttribute("tabindex", "0");
+        if (amount === "other") {
+          el.setAttribute("aria-label", "Pay other amount via Venmo");
+          el.addEventListener("click", openOtherForm);
+        } else {
+          const url = venmoUrl(amount);
+          el.setAttribute("aria-label", `Pay $${amount} via Venmo`);
+          el.addEventListener("click", () => window.open(url, "_blank"));
+        }
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            el.dispatchEvent(new Event("click"));
+          }
+        });
+      }
+
+      tableCells.forEach((c) => {
+        const r = makeRect(c);
+        attachClick(r, c.amount);
+        overlay.appendChild(r);
+      });
+
+      const usernameText = document.createElementNS(SVG_NS, "text");
+      usernameText.setAttribute("x", "905");
+      usernameText.setAttribute("y", "238");
+      usernameText.setAttribute("text-anchor", "middle");
+      usernameText.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif");
+      usernameText.setAttribute("font-size", "34");
+      usernameText.setAttribute("font-weight", "700");
+      usernameText.setAttribute("fill", "#111");
+      usernameText.textContent = "@" + VENMO_USER;
+      overlay.appendChild(usernameText);
+
+      ballSegments.forEach((s) => {
+        const p = makePoly(s);
+        attachClick(p, s.amount);
+        overlay.appendChild(p);
+      });
+
+      // Other amount modal
+      const otherForm = document.getElementById("otherForm");
+      const otherAmt = document.getElementById("otherAmt");
+      function openOtherForm() {
+        otherForm.classList.add("open");
+        otherAmt.value = "";
+        setTimeout(() => otherAmt.focus(), 50);
+      }
+      function closeOtherForm() {
+        otherForm.classList.remove("open");
+      }
+      document.getElementById("otherCancel").addEventListener("click", closeOtherForm);
+      document.getElementById("otherPay").addEventListener("click", () => {
+        const amt = parseFloat(otherAmt.value);
+        if (!amt || amt <= 0) {
+          otherAmt.focus();
+          return;
+        }
+        window.open(venmoUrl(amt), "_blank");
+        closeOtherForm();
+      });
+      otherForm.addEventListener("click", (e) => {
+        if (e.target === otherForm) closeOtherForm();
+      });
+    </script>
+  </body>
+</html>
