@@ -174,8 +174,15 @@
       const VENMO_USER = "jcreamer898";
       const NOTE = "TSMS Volleyball Fundraiser";
 
-      const venmoUrl = (amount) =>
-        `https://account.venmo.com/pay?recipients=${VENMO_USER}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(NOTE)}&txn=pay`;
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      const venmoUrl = (amount) => {
+        const amt = encodeURIComponent(amount);
+        const note = encodeURIComponent(NOTE);
+        return isMobile
+          ? `venmo://paycharge?txn=pay&recipients=${VENMO_USER}&amount=${amt}&note=${note}`
+          : `https://venmo.com/${VENMO_USER}?txn=pay&amount=${amt}&note=${note}`;
+      };
 
       // Hotspots use the natural image coordinate system (1320 x 709)
       // Table cells: { amount, x, y, w, h }
