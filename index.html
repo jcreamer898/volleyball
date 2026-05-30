@@ -175,7 +175,7 @@
       const NOTE = "TSMS Volleyball Fundraiser";
 
       const venmoUrl = (amount) =>
-        `https://venmo.com/${VENMO_USER}?txn=pay&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(NOTE)}`;
+        `https://account.venmo.com/pay?recipients=${VENMO_USER}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(NOTE)}&txn=pay`;
 
       // Hotspots use the natural image coordinate system (1320 x 709)
       // Table cells: { amount, x, y, w, h }
